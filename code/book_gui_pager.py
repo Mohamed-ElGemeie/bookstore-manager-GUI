@@ -84,7 +84,6 @@ def session_update():
   truncate("sessions")
   # convert the three lists into a dataframe
   temp_df=pd.DataFrame({'name':[*session_dict.keys()],'cart':carts,'start_time':start_times})
-  print(temp_df)
   # overwrite with the dataframe into the sessions table
   to_db("sessions",temp_df,exist="append")
   print("\nSaved all current open sessions\n")
@@ -204,7 +203,6 @@ def Confirm(self,tk_or_sess,stay_name,func):
     tb_pd['item_id']=tb_pd['item_id'].astype(int)  
     # resets the trial1 variable and calls the function
     trial1=0
-    print(tb_pd)
     func(tb_pd)
 #confirm button rewinder 
 trial1=0   
@@ -342,7 +340,6 @@ class analysis_page(tk.Frame):
         query_book=run(f"SELECT * FROM db_bookstore.books t WHERE day(t.start_time) = {day} and month(t.start_time) ={month} and year(t.start_time) ={year};")   
         # call the reporter function
         reporter(query,query_book)
-        print(query,query_book) 
       # true if the user passes two dates
       #(yaer-year)(month-month)(day=day)
       elif(len(sp_year)==2 and len(sp_month)==2 and len(sp_day)==2):
@@ -357,7 +354,6 @@ class analysis_page(tk.Frame):
         query=run(f"SELECT * FROM db_bookstore.transactions t WHERE t.start_time between '{sp_year[0]}-{sp_month[0]}-{sp_day[0]}' and '{sp_year[1]}-{sp_month[1]}-{sp_day[1]}' GROUP BY t.stay;")
         query_book=run(f"SELECT * FROM db_bookstore.books t WHERE day(t.start_time) = {day} and month(t.start_time) ={month} and year(t.start_time) ={year};")   
         reporter(query,query_book)
-        print(query,query_book)
       # true if above cases weren't satisfied
       else:
         self.error_visor.config(text='-أدخل فقط سنة - شهر - يوم في كلا المدخلين أو أحدهما')
@@ -413,37 +409,58 @@ class analysis_page(tk.Frame):
     go_back.pack(side='bottom')  
 class book_page(tk.Frame):
   """
-  This class handels transactions of the books and printed paper into
-  the books table from db. nig
+  This class writes transactions of the books and printed paper into
+  the books table from db.
+  * recive user input of book name, book price, printed paper amount
+  * write the transaction details into the books table from db
   """
   def __init__(self,parent,stacker,bg=None,fg=None):
     tk.Frame.__init__(self, parent,bg=bg,fg=fg)
     self.stacker = stacker
     def printed():
+      """
+      Function that handels the printed paper amount transaction.
+      * checks for any user errors
+      * calculates the price of the amount 
+      * stores the transaction into the books table
+      """
+      # retrive paper amount from entry box
       paper=paper_amount_e.get()
+      # true if the entry box isn't empty
+      # false if the user didn't input anything
       if paper_amount_e:
         try:
           paper=int(paper)
-
+        # raises error if the user inputs anything else other than int
         except:
           self.error_visor.config(text="The paper amount has to be a number/عدد الورق يجب ان يكن رقم")
           return
+        # create paper transaction row
         temp_df=pd.DataFrame({'name': [paper],'price': [paper*0.75],
             'stay': ["paper"],
             'start_time': dt.now()})
-        print(temp_df)
+        # append row to books table
         to_db("books",temp_df,exist="append")
+        # empty the user entry box
         paper_amount_e.delete(0,tk.END)
         self.error_visor.config(text='تم التسجبل')
       else:
         self.error_visor.config(text="one of the fields is empty/احد  الإدخالات فارغ")
-
     def buy():
+      """
+       Function that handels the sold book transactions.
+      * checks for any user errors 
+      * stores the transaction into the books table
+      """
+      # global variable counter to make each transaction have a unique name
       global book_counter
+      # retrive user input
       name=book_name_e.get()
       price=book_price_e.get()
+      # true if the user inputs in both boxes and false otherwise
       if name and price:
         try:
+          # check if the price is int, and the name is string
           int(price)
           if(name.isdigit()):
             self.error_visor.config(text="The name has to have letter/الاسم يجب ان يكن متكون من حروف")
@@ -451,14 +468,19 @@ class book_page(tk.Frame):
         except:
           self.error_visor.config(text="The price has to be a number/السعر يجب ان يكن رقم")
           return
+        # creats the transaction row
         temp_df=pd.DataFrame({'name': [name],'price': [price],
                   'stay': [f"book {book_counter}"],
                   'start_time': dt.now()})
+        # enumerate by one
         book_counter+=1
+        # store the new counter
         config_data['book_num']=book_counter
+        # save the new counter to config.json
         json_update()
-        print(temp_df)
+        # append the transaction to the book table
         to_db("books",temp_df,exist="append")
+        # empty user entry boxes
         book_name_e.delete(0,tk.END)
         book_price_e.delete(0,tk.END)
         self.error_visor.config(text='تم التسجبل')
@@ -481,7 +503,6 @@ class book_page(tk.Frame):
     book_price_l=tk.Label(self,text='Book Price/سعر الكتاب',height=1,justify='center',relief='flat' ,font=('Helvetica',22,'bold'),fg='black',bg='light grey')
     self.error_visor=tk.Label(self,text='Errors are showen here/أخطاء المستخدم',width= 60 ,font=('Helvetica',18,'bold'),bg='light grey')
     paper_amount_l=tk.Label(self,text='Printed paper/عدد الورق للطباعة',height=1,justify='center',relief='flat' ,font=('Helvetica',22,'bold'),fg='black',bg='light grey')
-
     #placments
     go_back.pack(side='bottom')
     buy_b.place(x=150,y=320)
@@ -494,144 +515,208 @@ class book_page(tk.Frame):
     print_b.place(x=900,y=170)
     self.error_visor.place(x=200,y=30)
 class stock_page(tk.Frame):
-
+  """
+  This page handels the stock transactions and manages the stock,
+  some stock also exists in the menu and so this class handels 
+  automatic decrease of stock on purchase.
+  *
+  """
   def __init__(self, parent, stacker,bg=None,fg=None):
     tk.Frame.__init__(self, parent,bg=bg,fg=fg)
     self.stacker = stacker
+    # labels and vars
     # placed here to avoid refrence before assignment errors
     self.stock_amount=tk.IntVar()
     self.stock_amount.set(1)
     self.stock_entry=tk.Entry(self,font=("Helvetica",28),width=30)
     self.error_visor=tk.Label(self,height = 2, width = 40 ,text="Errors are shown here",font=('Helvetica',15,'bold'),bg='light grey')
     def exit_seq():
+      """
+      Function run on exit of the page.
+      * updates the stock dataframe from the stock table
+      * write the stock items and thier counts
+      * upadte the warning box of missing or low amount stock
+      """
       global df_st
       df_st=look("stock")
       stock_page.listbox_update(self)
       stock_page.warn(self)
+      # go back to startpage
       stacker.show_frame('startpage')
     def add_price():
+      """
+      Function that handels the user input and changes the stock dataframe 
+      with the new stock amount specified by the user and writes that to the 
+      stock table from db
+      """
+      # stock dataframe
       global df_st
+      # stock counter for unique transactions
       global stock_counter
+      # true the user doesn't input anything
       if(self.stock_entry.get()==''):
         self.error_visor.config(text='Enter the stock price/أدخل سعر السلعة')
         return
       try:
+        # check if int
         price=int(self.stock_entry.get())
       except:
         self.error_visor.config(text='Only enter the stock price Number/ادخل اركام فقط')
         return
+      # true if the user didn't change the stock
+      # return as the stock needs to be changed in order for a transaction to be done
       if df_st.equals(look("stock")):
         self.error_visor.config(text="You didn't change the Stock/أنت لم تغير المخزون")
         return
+      # you can't buy stock with a negative number and so this returns if true
       if price<0:
         self.error_visor.config(text="Price can't be less than zero!/لا يمكن أن يكون السعر أقل من صفر!")
         return      
+      # create stock transaction row
       temp_df=pd.DataFrame({'item_id':[-1],'item_count': [0],'item_total': [0],
                 'order_total': [0],'table': [False],'stay': [f"stock {stock_counter}"],
                 'start_time': dt.now(),'end_time':dt.now(),'time':dt.now()-dt.now(),
                 'wifi':[0],'paid_total':[-price]})
       stock_counter+=1
+      # save the new stock counter to config.json
       config_data['stock_num']=stock_counter
       json_update()
-
-      print(temp_df)
+      # append the new transaction row
       to_db("transactions",temp_df,exist="append")
       truncate('stock')
+      # overwrite the stock table
       to_db('stock',df_st,'append')
+      # empty and default all entries
       self.error_visor.config(text='')
       self.stock_entry.delete(0,"end")
       self.stock_entry.focus()
       self.stock_amount.set(1)
     def change(add):
+      """
+      This function handels all the change the user makes on the stock amounts
+      in real time.
+      parameters:
+        add: if true, the stock is increased with the count the user specifies
+             if false, the stock is decreased with the count the user specifies
+      * get the stock item, and the number to change its count by.
+      * check for user input
+      * update stock dataframe without changing the stock table from db.
+      """
+      # get user input
       y=int(self.stock_amount.get())
       z=self.stock_entry.get().strip()
-      #handlling of empty input error + entry not in menu error
+      # handlling of empty input + input not existing in the stock dataframe
+      # zlen: the amount of items that are equal to the user input
+      # zlen will always equal 1 or zero
       zlen=(df_st['item_name']==z).sum()
       if not z:
         self.error_visor.config(text='Please Select an Item!')
       elif not zlen:      
         self.error_visor.config(text='Incorrect Item, Please Select from the List') 
       else:
-       # temp_id=df_st[df_st['item_name']==z].reset_index(drop = True)
-#        df_st[df_st['item_name']==z]['item_stock']=
+        # true if the user wants to increase the count
         if add:
+          # increase the dataframe's stock item count with the user specified count 
           df_st.loc[df_st['item_name']==z,['item_stock']]+=y
+        # true if the user wants to decrease the count
         else:
+          # handels the decrease on a zero amount item
           if df_st.loc[df_st['item_name']==z,['item_stock']].values==0:
             self.error_visor.config(text="You don't have that Item! Please buy some")
             self.stock_entry.focus()
             return()
+          # handels if the user wants to decrease a larger number
+          # resulting in a negative stock
           elif (df_st.loc[df_st['item_name']==z,['item_stock']].values-y)<0:
             self.error_visor.config(text=f"You can't delete {y} if you only have {df_st.loc[df_st['item_name']==z,['item_stock']].values}")
             self.stock_entry.focus()
             return()
+          # decrease the dataframe's stock item count
           else:
             df_st.loc[df_st['item_name']==z,['item_stock']]-=y
+        # update all fields
         stock_page.listbox_update(self)
         stock_page.warn(self)
         self.error_visor.config(text='')
       self.stock_entry.focus()
-
-     #   displayed_data.append() 
-      #clear the box list:
-      #add the items to the box:
-     # for i in item:
-     #   self.stock_menu.insert(tk.END,i)
-
-    #update function
     def fillout(e):
+      """
+      Event function that is run when the user selects an item from the list box,
+      this function auto completes the user input.
+      * user clicks an item from the list box , which runs this function.
+      * the selected item then is auto filled into the user entry box.
+      """
+      # delete the user input
       self.stock_entry.delete(0,tk.END)
-      #add list item to entry box
+      # true if the user selected anything on the list box
       if self.stock_menu.get(self.stock_menu.curselection()):
         x=self.stock_menu.get(self.stock_menu.curselection())
+        # assign the entry box with the selected item
         self.stock_entry.insert(0,x[:x.find('-')])   
-   
     def tab_handler(e):
+      """
+      Event function run on pressing tab while selecting the entry box,
+      this function selects the first item that appears on the list box
+      and assign that to the user's entry box
+      """
+      # get the list box's size
       box_size=self.stock_menu.size()
-      #makes tab take the lastest item from the list box of items
+      # true if the box size isn't zero, and an input exists
       if self.stock_entry.get() and box_size:
+        # clear the user's selection on the list box
         self.stock_menu.selection_clear(0, 'end')
+        # delete the user's entry box
         self.stock_entry.delete(0,tk.END)        
+        # select the first item form the listbox
         self.stock_menu.select_set(0) 
+        # assign that item to the user's entry box
         x=self.stock_menu.get(self.stock_menu.curselection())
-        self.stock_entry.insert(0,x[:x.find('-')])                        
-       # self.stock_entry.insert(0,self.stock_menu.get(self.stock_menu.curselection()))
+        self.stock_entry.insert(0,x[:x.find('-')])
       self.stock_entry.focus()  
-      
     def check(e):
+      """
+      Event function that takes all the item in the dataframe
+      that contain a substring of the user's input, then it auto fills
+      those item only to the list box.
+      * makes it easier for the user to find thier item easily
+      * uses python's 'in' operator
+      """
+      # get user input
       inthere=self.stock_entry.get().lower().strip()
+      # writes the whole stock dataframe to the list box
+      # incase the user didn't have any input
       if inthere== '':
         stock_page.listbox_update(self)  
       else:
         self.stock_menu.delete(0,tk.END)
+        # check for each item and appends it if it contains a substring of the 
+        # user's input 
         for i,g in zip(df_st['item_name'].values,df_st['item_stock'].values):
           if inthere in i.lower():
             self.stock_menu.insert(tk.END,f'{i}-  {g}')
-
+      # select the first item in the list box
       self.stock_menu.select_set(0)    
-
-    go_back=tk.Button(self,font=20,text=('Go Back <(----'),command=lambda: exit_seq())
+    # listboxes
     self.stock_menu=tk.Listbox(self,font=("Helvetica",16),justify='right',relief='solid',height=26,width=30,exportselection=False,selectmode='SINGLE')
-    
+    # buttons
+    go_back=tk.Button(self,font=20,text=('Go Back <(----'),command=lambda: exit_seq())
     add_btn=tk.Button(self,font=('Helvetica',16,'bold'),fg='#07D712',bg='#f5f5f5',height=1,text="Add Stock",command=lambda: change(True))
     remove_btn=tk.Button(self,font=('Helvetica',16,'bold'),fg='#D72C2C',bg='#f5f5f5',height=1,text="Del Stock ",command=lambda: change(False))
     change_btn=tk.Button(self,font=('Helvetica',16,'bold'),fg='#E68C00',bg='#f5f5f5',width=12,height=1,text="Confirm",command=lambda: add_price())
-
+    # labels
     self.warning=tk.Label(self,height=19,justify='left', width = 50 ,text="Warnings are shown here",font=('Helvetica',15),bg='light grey')
-    
+    # option menus
     self.stock_amount_option = tk.OptionMenu(self, self.stock_amount, *amount)
-    #bind list box
-     
+    # function run on start up to fill the fields
     stock_page.listbox_update(self)     
     stock_page.warn(self)
-
+    # bindings
     self.stock_menu.bind('<<ListboxSelect>>',fillout)
     self.stock_entry.bind("<KeyRelease>",check)
     self.stock_entry.bind('<Tab>', tab_handler)
-    #---
+    # placments
     self.error_visor.place(x=130,y=10)
-    self.warning.place(x=60,y=190)     
-    
+    self.warning.place(x=60,y=190)
     add_btn.place(x=700,y=130)
     remove_btn.place(x=700,y=83)
     change_btn.place(x=680,y=220)
@@ -640,91 +725,158 @@ class stock_page(tk.Frame):
     self.stock_amount_option.place(x=830,y=105)
     go_back.pack(side='bottom')    
   def warn(self):
+    """
+    Function that updates the warning box, this functions
+    is used to warn the user of any low count stock that 
+    should be refilled after a certain number
+    """
     warning=''
+    # loop over the stock dataframe and check if any items have low counts
     for i,g in zip(df_st['item_stock'].values,df_st['item_name'].values):
+      # counts less that 8
       if(i<8):
         warning+=f"Now! {g} - You have {i}\n"    
+      # counts less than 15
       elif(i<15):
         warning+=f"Tomorrow! {g} - You have {i}\n"
+    # write that warining string to the warning label
     self.warning.config(text=warning[:-1])
   def listbox_update(self):
+    """
+    Fucntion that updates the listbox with the stock dataframe items
+    with out any manipulation
+    """
+    # delete the list box contents
     self.stock_menu.delete(0,tk.END)
+    # loop and append
     for i,g  in zip(df_st['item_name'].values,df_st['item_stock'].values):
         self.stock_menu.insert(tk.END,f'{i}-  {g}')
-  
 class session_order_page(tk.Frame):
-
+  """
+  This page handels the quick take-away order, and the creation of sessions
+  from the session class.
+  """
   def __init__(self, parent, stacker,bg=None,fg=None):
     tk.Frame.__init__(self, parent,bg=bg,fg=fg)
     self.stacker = stacker
+    # global variable counters that ensure unique id for each session and takeaway transaction
     self.table_count=table_counter
     self.take_count=take_away_counter 
+    # varible that holds wether the order is take-away or not
     self.table=tk.IntVar()
+    # set to zero as any orders on this page are take-away orders
     self.table.set(0)
     def listbox_update(item):
-      #clear the box list:
+      """
+      Function that updates the listbox with the passed argument items
+      without any manipulation.
+      parameters
+        item: list object that contains the items to be filled
+      """
+      # clear the list box
       entries_boxllist.delete(0,tk.END)
-      #add the items to the box:
+      # append the items to the list box
       for i in item:
         entries_boxllist.insert(tk.END,i)
-    #double click deltetion handler 
     def dble_clk_del(e):
-      if not self.cart_boxlist.curselection():
-        sleep(0.3)
-      else:
+      """
+      Event function that delets an item row from the list box cart when double clicked on
+      by the user.
+      """
+      # true if a selection exists 
+      if self.cart_boxlist.curselection():
+        # remove the selection
         self.cart_boxlist.delete(self.cart_boxlist.curselection())
-        
-    #tab handler: for felxibilty in typing
+      else:
+        sleep(0.3)
     def tab_handler(e):
+      """
+      Event function run on pressing tab while selecting the entry box,
+      this function selects the first item that appears on the list box
+      and assign that to the user's entry box
+      """
+      # get the list box's size
       box_size=entries_boxllist.size()
-      #makes tab take the lastest item from the list box of items
+      # true if the box size isn't zero, and an input exists
       if order_items.get() and box_size:
+        # clear the user's selection on the list box
         entries_boxllist.selection_clear(0, 'end')
-        order_items.delete(0,tk.END)        
-        entries_boxllist.select_set(0)                      
+        # delete the user's entry box
+        order_items.delete(0,tk.END)  
+        # select the first item form the listbox      
+        entries_boxllist.select_set(0)    
+        # assign that item to the user's entry box          
         order_items.insert(0,entries_boxllist.get(entries_boxllist.curselection()))
       order_items.focus()        
-    #deletion function to empty the cart from button
     def empty_cart(*args):
+      """
+      Event function and button function that removes all the items from the cart list box
+      """
       self.cart_boxlist.delete(0,'end')
-      pass
-    #add item to table Cart
     def add_item(*args):
+      """
+      This function adds items to the cart listbox specified by the user,
+      and handels any changes in stock if that item were to exist in both
+      the menu and the stock dataframes. Also handels repeated item entries
+      and incorrect user inputs
+      """
+      # get user input, amount, item
       y=int(order_amount_var.get())
       z=order_items.get()
-
-      #handlling of empty input error + entry not in menu error
+      # amount of menu items that are equal to the user input
+      # can only be one or 0
       zlen=(df_pd['item_name']==z).sum()
+      # handle items existing in both the menu and the stock dataframe
       try:
-        #print('wow cool',int(g[g.find("nt:(")+4:g.find(")-")]),y,stock)
+        # will not cause errors
+        # if there exists and item with the same name in the stock dataframe
+        # as the item selected by the user
         stock=int(df_st.loc[df_st['item_name']==z,['item_stock']].values)
+        # true if the user tries to buy a non existing item
         if stock<1:
           self.error_visor.config(text='That item is out of stock!')
           return()
+        # true if the user tries to buy more items that he currently has
         if stock-y<0:
           self.error_visor.config(text='You need more of that item!')
           return()
+        # if all above is false, this variable later declares that this item's stock amount in 
+        # the stock table will be changed if assinged to true
         stocked=True
       except:
         stocked=False       
-
+      # true if the user doesn't have any input
       if not z:
         self.error_visor.config(text='Please Select an Item!')
+      # true if the input isn't any items from the menu
       elif not zlen:      
         self.error_visor.config(text='Incorrect Item, Please Select from the List') 
       else:
         x=df_pd[df_pd['item_name']==z].reset_index(drop = True)
+        # price_ta is the take-away price of that item
         x=x.price_ta
         table='0 Take Away'
+      # add_var: is used to decide if the item already exists in the list box 
+      # or not, this ensures that repeated items share the same row
       add_var=False
+      # in_stock: this is used to take into account the amount of the item's count
+      # in the cart list box, to avoid having negative stock
       in_stock=True
+      # loop over the cart boxlist
       for i in range(self.cart_boxlist.size()):
         g=self.cart_boxlist.get(i)
+        # true if the user's inputted item is in the selected row from the list box
         if z in g:
+          # true if the item's table type (no table-0, yes table-1) is the same as
+          # the selected item
           if int(g[g.find('-')+1]) == self.table.get():
             if stocked:
+              # true if the item's amount in stock -- minus -- the
+              # additional amonut + the amount already existing in the cart
+              # is more than or equal to zero. To avoid negative stock errors 
               if stock-(y+int(g[g.find("nt:(")+4:g.find(")-")]))>=0:
                 print('already here, adding counts..')
+                # set true to add the user's specified amount to the already existing row
                 add_var=True
                 break
               else:
@@ -732,132 +884,162 @@ class session_order_page(tk.Frame):
                 break
             else:
               add_var=True
+      # true if item exists in stock, and could be increased
       if add_var and in_stock:
         y+=int(g[g.find("nt:(")+4:g.find(")-")])
         self.cart_boxlist.delete(i)
+        # change the row
         self.cart_boxlist.insert(i,f'{z}-{table} | Price:({x[0]}) Amount:({y})--Total = {int(y)*int(x[0])}')
         self.error_visor.config(text='')
+      # true if the item doesn't exist in the stock dataframe
+      # and also true if the item exists in the stock dataframe, but wasn't added before to the cart box list
       elif in_stock:
         self.cart_boxlist.insert(tk.END,f'{z}-{table} | Price:({x[0]}) Amount:({y})--Total = {int(y)*int(x[0])}')  
         self.error_visor.config(text='')
       else:
         self.error_visor.config(text='You need more of that item!') 
       order_items.focus()
-      
-    #update function
     def fillout(e):
+      """
+      Event function that is run when the user selects an item from the list box,
+      this function auto completes the user input.
+      * user clicks an item from the list box , which runs this function.
+      * the selected item then is auto filled into the user entry box.
+      """
       order_items.delete(0,tk.END)
-      #add list item to entry box
       if entries_boxllist.get(entries_boxllist.curselection()):
+        # append the selected item into the menu list box
         order_items.insert(0,entries_boxllist.get(entries_boxllist.curselection()))   
-    #check entry box
     def check(e):
+      """
+      Event function that takes all the item in the dataframe
+      that contain a substring of the user's input, then it auto fills
+      those item only to the list box.
+      * makes it easier for the user to find thier item easily
+      * uses python's 'in' operator
+      """
       inthere=order_items.get()
+      # assigns the whole dataframe if the input is empty
       if inthere== '':
         displayed_data=df_pd['item_name'].tolist()
       else:
         displayed_data=[]
         for i in df_pd['item_name'].tolist():
+          # finds similr items
           if inthere.lower() in i.lower():
             displayed_data.append(i)
+      # display the item onto the menu listbox
       listbox_update(displayed_data)
+      # select the first row item
       entries_boxllist.select_set(0)
     def finalize(tb_pd):
-          app.frames['session_order_page'].take_count+=1
-          config_data['tk_num']=app.frames['session_order_page'].take_count
-          json_update()
-          # .strftime('%I:%M:%S-%p')
-          tb_pd['start_time'] = dt.now()
-          tb_pd['end_time']=dt.now()
-          tb_pd['time']=dt.now()-dt.now()
-          tb_pd['start time display'] = dt.now().strftime('%I:%M:%S-%p')
-          tb_pd['end time display']=dt.now().strftime('%I:%M:%S-%p')
-          tb_pd['time display']="0:00:00"
-
-          tb_pd['wifi']=0
-          tb_pd['paid_total']=tb_pd['order_total']
-          summary_page.transfrom_enter(tb_pd)           
-          stacker.show_frame('summary_page') 
-    #label top
+      """
+      This function is run after the confirm function check out the cart.
+      This handels other transaction columns, and calls the summary_page
+      to prompt the user with the recipt.
+      parameters:
+        tb_pd: pandas dataframe that holds transaction information
+      """
+      # change the unique id for the take-away orders
+      app.frames['session_order_page'].take_count+=1
+      # overwrite and update to config.json
+      config_data['tk_num']=app.frames['session_order_page'].take_count
+      json_update()
+      # update the transaction's time info
+      # this is used to be written onto the transaction database
+      tb_pd['start_time'] = dt.now()
+      tb_pd['end_time']=dt.now()
+      tb_pd['time']=dt.now()-dt.now()
+      # this is used for the recipt display
+      tb_pd['start time display'] = dt.now().strftime('%I:%M:%S-%p')
+      tb_pd['end time display']=dt.now().strftime('%I:%M:%S-%p')
+      tb_pd['time display']="0:00:00"
+      # wifi charge is zero since this is a take-away order
+      tb_pd['wifi']=0
+      tb_pd['paid_total']=tb_pd['order_total']
+      summary_page.transfrom_enter(tb_pd)           
+      stacker.show_frame('summary_page') 
+    # label top
     item_label=tk.Label(self,height = 1, width = 15 ,text=('Quick Take Away'),font=('Helvetica',18),bg='light grey')
     item_label.place(x=10,y=10)
-    #entry box
+    # entry box
     order_items=tk.Entry(self,font=("Times",25))
     order_items.place(x=10,y=60)
-    #enter amount
+    # enter amount
     order_amount_var=tk.StringVar()
     order_amount_var.set(1)
     order_amount_menu = tk.OptionMenu(self, order_amount_var, *amount)
     order_amount_menu.place(x=360,y=70)      
-    #item list box
+    # item list box
     entries_boxllist=tk.Listbox(self,font=('italic',15),width=30,exportselection=False,selectmode='MULTIPLE')
     entries_boxllist.place(x=10,y=110)    
-    #bind from list box to entry box
+    # bind from list box to entry box
     listbox_update(df_pd['item_name'].tolist())        
     entries_boxllist.bind('<<ListboxSelect>>',fillout)
-    #bind entry box
+    # bind entry box
     order_items.bind("<KeyRelease>",check)
     order_items.bind('<Tab>', tab_handler)
     order_items.bind('<Return>',add_item)
-    #enter button for item
+    # enter button for item
     btn_insert_item=tk.Button(self,width=10,text=('Add Item'),font=('Helvetica',16,'bold'),bg='light grey',command=add_item)
     btn_insert_item.place(x=350,y=120)
-    #delete all button
+    # delete all button
     delete_cart_btn=tk.Button(self,width=10,text='Delete',font=('Helvetica',16,'bold'),fg='red',bg='light grey', command=empty_cart)
     delete_cart_btn.place(x=350,y=200)    
-    #box list of cart
+    # box list of cart
     self.cart_boxlist=tk.Listbox(self,width=70,height=11,font=('Helvetica',15),exportselection=True,selectmode='SINGLE')
     self.cart_boxlist.bind('<Double-1>',dble_clk_del)
     self.cart_boxlist.bind('<BackSpace>', empty_cart)
     self.cart_boxlist.place(x=8,y=360)
-    #Confirm button for items in cart
+    # confirm button for items in cart
     confirm_button=tk.Button(self,width=10,text='Confirm',font=('Helvetica',16,'bold'),fg='dark blue',bg='light grey',
                     command=lambda: Confirm(self=self,tk_or_sess=False,stay_name=f'Take-away {self.take_count}'
-                    ,func = finalize))
-                    
+                    ,func = finalize))      
     confirm_button.place(x=350,y=280)
-    #updates widnow for errors
+    # updates widnow for errors
     self.error_visor=tk.Label(self,height = 1, width = 35 ,text='',font=('Helvetica',15,'bold'),bg='light grey')
     self.error_visor.place(x=300,y=20)      
-    #---------------------------------------------------------------------------------------------------------------------------------------#
-    #session creater section
-    #delete session function
     def delete_session():
+      """
+      This function handels the deletion of sessions.
+      """
+      # get the position on the listbox
       size=len(self.session_boxlist.curselection())
       if size:
           index=self.session_boxlist.curselection()[0]
           name=self.session_boxlist.get(index)        
           print('selected delete',index,name)
           self.session_boxlist.delete(index)  
+          # delete the session object from session_dict
           del session_dict[name]
-         # del config_data[name]
-        #  json_update()
       else:
         print('empty delete')        
-        sleep(0.3)    
+        sleep(0.3)
+      # update the sessions table from database    
       session_update() 
-      #to_db("sessions",pd.DataFrame(session_dict),exist="replace")
-
-    #create session function
     def create_session():
+      """
+      This function create the session object.
+      """
+      # change the unique id
       self.table_count+=1
+      # create the unique session name
       x=f'Session {self.table_count}'
+      # create the session object assigned with the session's name, and 
+      # a date time object that accounts for the start time of this session's creation
       session_dict[x]=sessions(dt.now(),x)
-
+      # append the name into the session list box
       self.session_boxlist.insert('end',x)
+      # update the config.json file
       config_data['session_num']= self.table_count
       json_update()
+      # update the session's table from database
       session_update()
-      """ vars_open = open(f'{cur_dir}\-vars.txt','r+') 
-      vars1=vars_open.read()
-      vars1=str(self.table_count)+vars1[vars1.find(','):]
-      vars_open.seek(0)
-      vars_open.truncate(0)
-      vars_open.write(vars1)
-      vars_open.close()"""
-      
-    #function from double click on session instance to enter the orders page
     def enter_session(e):
+      """
+      This function handels the entring sequence when double clicking
+      on a session.
+      """
       size=len(self.session_boxlist.curselection())
       if size:
         index=self.session_boxlist.curselection()[0]
@@ -868,56 +1050,68 @@ class session_order_page(tk.Frame):
       else:
         print('empty')        
         sleep(0.3)       
-    #session creater list label
+    # session creater list label
     session_label=tk.Label(self,height=1,width=12,text='Session List',font=('Helvetica',16,'bold'),bg='light grey')
     session_label.place(x=900,y=60)
-    #list box for sessions creation
+    # list box for sessions creation
     self.session_boxlist=tk.Listbox(self,height=20,width=20,font=(16),exportselection=False,selectmode='SINGLE')
     self.session_boxlist.bind('<Double-1>',enter_session)
     self.session_boxlist.place(x=900,y=100)      
-    #list session box create button
+    # list session box create button
     creater_button=tk.Button(self,height=1,width=3,text='C',font=('Helvetica',20,'bold'),
                              fg='dark green',bg='light grey',command=create_session)
     creater_button.place(x=830,y=100)
-    #deleter button
+    # deleter button
     deleter_button=tk.Button(self,height=1,width=3,text='D',font=('Helvetica',20,'bold'),
                              fg='dark red',bg='light grey',command=delete_session)
     deleter_button.place(x=830,y=170)    
-    #---------------------------------------------------------------------------------------------------------------------------------------#    
-    #seperation line middle line
+    #seperation middle line
     middle_line=tk.Canvas(self,width=5,height=680,bg='black')
     middle_line.place(x=800,y=10)
-    #return button
+    # return button
     go_back=tk.Button(self,width=40,font=20,text=('Go Back <(----'),command=lambda: stacker.show_frame('startpage'),bg='light grey')
     go_back.place(x=8,y=650)       
-#session creater class
 class sessions():
+  """
+  This class handels the session object which indiactes that a customer has arrived at the cafe,
+  also calculates the wifi charge, and handels certain cart operations for each sessions
+  """
   def __init__(self,start_time,session_name,cart=[]):
+    """
+    each session has to have a start_time, and a name.
+    the cart is kept by default empty
+    """
     self.start_time=start_time
     self.session_name= session_name
     self.cart=cart
   def enter_session(self):  
+    """
+    This calls a function (transfrom_enter)
+    which auto fills any session information into the orders_page
+    """
     app.frames['orders_page'].transform_enter(self.session_name,self.cart)
   def calculate_nps(self):
-    self.end_time=dt.now()#.strftime('%I:%M:%S-%p')
-   # self.end_time= datetime.strptime(end_time,'%I:%M:%S-%p')
-    #start_time= datetime.strptime(self.start_time,'%I:%M:%S-%p')
+    """
+    This function calculates and returns the wifi charge, start time, end time of the session
+    """
+    # end time of the session
+    self.end_time=dt.now()
+    # handels any changes done to the start_time arrtibute of the session
     if type(self.start_time)==str:
       self.start_time = parser.parse(self.start_time)
     if type(self.start_time)==np.datetime64:
       timestamp = ((self.start_time - np.datetime64('1970-01-01T00:00:00'))
                  / np.timedelta64(1, 's'))
       self.start_time=dt.utcfromtimestamp(timestamp)
-    
+    # Time: the amount of time the session has lasted fore
     Time=self.end_time-self.start_time
     hours=Time.seconds//3600
     Time_disp=Time
-    #Time-=timedelta(days=Time.days,microseconds=Time.microseconds)
+    # Time is used as the transaction column
     Time=str(Time)
+    # Time_disp is used as the display string on the recipt
     Time_disp-=timedelta(days=Time_disp.days,microseconds=Time_disp.microseconds)
-    print(self.cart)
-   # print(ordered)
-    #Time.days=0
+    # this calucates the wifi charge based on the cafe requiremnts
     if hours > 0 and hours < 5:
       hours-=1
       Wifi=(hours*5)+5
@@ -927,10 +1121,9 @@ class sessions():
       Wifi=25
     else:
       raise Exception("Start and End time of the session has resulted in a non intger diffrence (NPS)")
-
+    # return dictionary
     return({'start time display':self.start_time.strftime('%I:%M:%S-%p'),'end time display': self.end_time.strftime('%I:%M:%S-%p')
     ,'time display': str(Time_disp),'wifi':Wifi,'start_time':self.start_time,'end_time':self.end_time,'time':Time})
-    
 #orders page
 class orders_page(tk.Frame):
   def __init__(self, parent, stacker,bg=None,fg=None):
@@ -1009,7 +1202,6 @@ class orders_page(tk.Frame):
           x=x.price_ta
           table='0 Take Away'
         #check for duplicates to sum up counts of the same item
-        print('-'*50)
         add_var=False
         in_stock=True
         for i in range(self.cart_boxlist.size()):
@@ -1208,7 +1400,6 @@ class summary_page(tk.Frame):
     to_db("transactions",df,exist="append")
     #to_csv(transaction_path,mode='a', index=False,header=False)        
     app.frames['summary_page'].stacker.show_frame('session_order_page')
-    print(df)
   def transfrom_enter(df):
     # self arrtibute to be transferd to the init fucntion button btn_paid
     app.frames['summary_page'].curr_data= df
