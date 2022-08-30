@@ -1124,93 +1124,140 @@ class sessions():
     # return dictionary
     return({'start time display':self.start_time.strftime('%I:%M:%S-%p'),'end time display': self.end_time.strftime('%I:%M:%S-%p')
     ,'time display': str(Time_disp),'wifi':Wifi,'start_time':self.start_time,'end_time':self.end_time,'time':Time})
-#orders page
 class orders_page(tk.Frame):
+  """
+  This page handles the session's user interface, it is responsible for 
+  session's cart items. This page's structure doesn't change, only some fields are 
+  changed when a new session is entered on this page that might have a differnet 
+  cart or name.
+  """
   def __init__(self, parent, stacker,bg=None,fg=None):
     tk.Frame.__init__(self, parent,bg=bg,fg=fg)
     self.stacker = stacker     
-    #transporter for table object from session class
+    # self.table: holds whether the order row is a take-away or in-store,
+    # as you can order take-away orders in a session
     self.table=tk.IntVar()
     self.table.set(1)
+    # table button which decide the above variable
     No_table = tk.Radiobutton(self, text="Take-Away / No table",font=('Helvetica',16,'bold'),
                               variable=self.table, value=0,borderwidth=3,cursor='exchange',bg='#ffd9d9',fg='black')
     Yes_table = tk.Radiobutton(self, text="In store / Yes table",font=('Helvetica',16,'bold'), 
                                variable=self.table, value=1,borderwidth=3,cursor='heart',bg='#ffd9d9',fg='black')
     Yes_table.place(x=15,y=5)
     No_table.place(x=15,y=50)
-    #input items of order(search and  autofill box):
-    #The items in the menu
     def listbox_update(item):
-      #clear the box list:
+      """
+      Function that updates the listbox with the passed argument items
+      without any manipulation.
+      parameters
+        item: list object that contains the items to be filled
+      """
+      # clear the cart box list 
       entries_boxllist.delete(0,tk.END)
-      #add the items to the box:
+      # add the items to the car box list
       for i in item:
         entries_boxllist.insert(tk.END,i)
-    #double click deltetion handler 
     def dble_clk_del(e):
-      if not self.cart_boxlist.curselection():
-        sleep(0.3)
+      """
+      Event function that delets an item row from the list box cart when double clicked on
+      by the user.
+      """
+      # true if a selection exists 
+      if self.cart_boxlist.curselection():
+        self.cart_boxlist.delete(self.cart_boxlist.curselection()) 
       else:
-        self.cart_boxlist.delete(self.cart_boxlist.curselection())
-        
-    #tab handler: for felxibilty in typing
+        sleep(0.3)
     def tab_handler(e):
+      """
+      Event function run on pressing tab while selecting the entry box,
+      this function selects the first item that appears on the list box
+      and assign that to the user's entry box
+      """
+      # get the list box's size
       z=entries_boxllist.size()
-      #makes tab take the lastest item from the list box of items
       if order_items.get() and z:
-
+        # clear selection, delete the user's entry box
         entries_boxllist.selection_clear(0, 'end')
         order_items.delete(0,tk.END)        
+        # select the first index of menu list box and append it to the user's entry box
         entries_boxllist.select_set(0)                      
         order_items.insert(0,entries_boxllist.get(entries_boxllist.curselection()))
       order_items.focus()        
-    #deletion function to empty the cart from button
     def empty_cart(*args):
+      """
+      Deletes all the cart list box's row
+      """
       self.cart_boxlist.delete(0,'end')
-      pass
-    
-    #add item to table Cart
     def add_item():
+      """
+      This function adds items to the cart listbox specified by the user,
+      and handels any changes in stock if that item were to exist in both
+      the menu and the stock dataframes. Also handels repeated item entries
+      and incorrect user inputs
+      """
+      # get user input, amount, item
       y=int(order_amount_var.get())
       z=order_items.get()
-      #handlling of empty input error + entry not in menu error + entry out of stock
+      # amount of menu items that are equal to the user input
+      # can only be one or 0
       zlen=(df_pd['item_name']==z).sum()
+      # handle items existing in both the menu and the stock dataframe
       try:
-        #print('wow cool',int(g[g.find("nt:(")+4:g.find(")-")]),y,stock)
+        # will not cause errors
+        # if there exists and item with the same name in the stock dataframe
+        # as the item selected by the user
         stock=int(df_st.loc[df_st['item_name']==z,['item_stock']].values)
+        # true if the user tries to buy a non exsiting item
         if stock<1:
           self.error_visor.config(text='That item is out of stock!')
           return()
+        # true if the user tries to buy more items than he currenlty has
         if stock-y<0:
           self.error_visor.config(text='You need more of that item!')
           return()
+        # if all above is false, this variable later declares that this item's stock amount in 
+        # the stock table will be changed if assinged to true
         stocked=True
       except:
         stocked=False       
-
+      # true if the user doesn't have any input
       if not z:
         self.error_visor.config(text='Please select an order')
+      # true if the input isn't any items from the menu
       elif not zlen:      
         self.error_visor.config(text='Incorrect order, Pick from the list') 
       else:
         if self.table.get():
           x=df_pd[df_pd['item_name']==z].reset_index(drop = True)
+          # price is the in-store price of that item
           x=x.price
           table='1 In Store'
         else:
           x=df_pd[df_pd['item_name']==z].reset_index(drop = True)
+          # price_ta is the take-away price of that item
           x=x.price_ta
           table='0 Take Away'
-        #check for duplicates to sum up counts of the same item
+        # add_var: is used to decide if the item already exists in the list box 
+        # or not, this ensures that repeated items share the same row
         add_var=False
+        # in_stock: this is used to take into account the amount of the item's count
+        # in the cart list box, to avoid having negative stock
         in_stock=True
+        # loop over the cart box list
         for i in range(self.cart_boxlist.size()):
           g=self.cart_boxlist.get(i)
+          # true if the user's inputted item is in the selected row from the list box
           if z in g:
+            # true if the item's table type (no table-0, yes table-1) is the same as
+            # the selected item
             if int(g[g.find('-')+1]) == self.table.get():
               if stocked:
+                # true if the item's amount in stock -- minus -- the
+                # additional amonut + the amount already existing in the cart
+                # is more than or equal to zero. To avoid negative stock errors
                 if stock-(y+int(g[g.find("nt:(")+4:g.find(")-")]))>=0:
                   print('already here, adding counts..')
+                  # set true to add the user's specified amount to the already existing row
                   add_var=True
                   break
                 else:
@@ -1218,156 +1265,197 @@ class orders_page(tk.Frame):
                   break
               else:
                 add_var=True
+        # true if item exists in stock, and could be increased
         if add_var and in_stock:
           y+=int(g[g.find("nt:(")+4:g.find(")-")])
           self.cart_boxlist.delete(i)
+          # change the row
           self.cart_boxlist.insert(i,f'{z}-{table} | Price:({x[0]}) Amount:({y})--Total = {int(y)*int(x[0])}')
           self.error_visor.config(text='')
+        # true if the item doesn't exist in the stock dataframe
+        # and also true if the item exists in the stock dataframe, but wasn't added before to the cart box list
         elif in_stock:
           self.cart_boxlist.insert(tk.END,f'{z}-{table} | Price:({x[0]}) Amount:({y})--Total = {int(y)*int(x[0])}')  
           self.error_visor.config(text='')
         else:
           self.error_visor.config(text='You need more of that item!') 
         order_items.focus()
-      
-    #update function
     def fillout(e):
+      """
+      Event function that is run when the user selects an item from the list box,
+      this function auto completes the user input.
+      * user clicks an item from the list box , which runs this function.
+      * the selected item then is auto filled into the user entry box.
+      """
       order_items.delete(0,tk.END)
-      #add list item to entry box
+      # add selected item to user's entry box
       if entries_boxllist.get(entries_boxllist.curselection()):
         order_items.insert(0,entries_boxllist.get(entries_boxllist.curselection()))   
-    #check entry box
     def check(e):
+      """
+      Event function that takes all the item in the dataframe
+      that contain a substring of the user's input, then it auto fills
+      those item only to the list box.
+      * makes it easier for the user to find thier item easily
+      * uses python's 'in' operator
+      """
       inthere=order_items.get()
+      # assign the whole dataframe if the user's input is empty
       if inthere== '':
         displayed_data=df_pd['item_name'].tolist()
       else:
         displayed_data=[]
         for i in df_pd['item_name'].tolist():
           if inthere.lower() in i.lower():
+            # append similr items into a list
             displayed_data.append(i)
+      # display the list of similr items onto the menu list box
       listbox_update(displayed_data)
       entries_boxllist.select_set(0)
-    #--------------
-    #button exit function
-    def go_back():
-        app.frames['orders_page'].transform_save(self.cart_boxlist.get(0,'end'))
-        session_boxlist=app.frames['session_order_page'].session_boxlist
-       # size=len(session_boxlist.curselection())
-        index=session_boxlist.curselection()[0]
-        name=session_boxlist.get(index)        
-        print('Saved and left',index,name)
-        self.cart_boxlist.delete(0,'end')
-        stacker.show_frame('session_order_page')
-        self.table.set(1)  
-      #--------------
-    #label top
+    def exit_seq():
+      """
+      Exit sequence function that saves the session's cart on exiting,
+      and clears the order_page's fields in order to fill them with other
+      session on entry.
+      """
+      # save the session by passing its cart
+      app.frames['orders_page'].transform_save(self.cart_boxlist.get(0,'end'))
+      # get the session_orders_page box list
+      session_boxlist=app.frames['session_order_page'].session_boxlist
+      # print which session was saved
+      index=session_boxlist.curselection()[0]
+      name=session_boxlist.get(index)        
+      print('Saved and left',index,name)
+      # delete the cart box in the orders_page
+      self.cart_boxlist.delete(0,'end')
+      stacker.show_frame('session_order_page')
+      self.table.set(1)  
+    # top label
     item_label=tk.Label(self,height = 1, width = 10 ,text=('Orders'),font=('Helvetica',16,'bold'),bg='#bfbfbf')
     item_label.place(x=15,y=110)
-    #entry box
+    # user entry box
     order_items=tk.Entry(self,width=20,font=("Times",20))
     order_items.place(x=15,y=150)
-    #enter amount
-    #amounts=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
+    # count of item option box + vars
     order_amount_var=tk.StringVar()
     order_amount_var.set(1)
     order_amount_menu = tk.OptionMenu(self, order_amount_var, *amount)
     order_amount_menu.place(x=300,y=153)      
-    #item list box
+    # user's cart list box
     entries_boxllist=tk.Listbox(self,width=30,font=(16),exportselection=False,selectmode='MULTIPLE')
     entries_boxllist.place(x=15,y=200)    
-    #bind from list box to entry box
-    listbox_update(df_pd['item_name'].tolist())        
+    # fill the menu with the menu dataframe
+    listbox_update(df_pd['item_name'].tolist())
+    # bindings        
     entries_boxllist.bind('<<ListboxSelect>>',fillout)
-    #bind entry box
     order_items.bind("<KeyRelease>",check)
     order_items.bind('<Tab>', tab_handler)
-    #enter button for item
+    # insert item from menu to cart button
     btn_insert_item=tk.Button(self,width=10,text=('Add'),font=('Helvetica',16,'bold'),bg='#bfbfbf',command=add_item)
     btn_insert_item.place(x=380,y=148)
-    #delete all button
+    # delete all items from cart button
     delete_cart_btn=tk.Button(self,width=10,text='Delete',font=('Helvetica',16,'bold'),fg='red',bg='#bfbfbf', command=empty_cart)
     delete_cart_btn.place(x=570,y=147)    
-    #box list of cart
+    # user's cart list box + bindings
     self.cart_boxlist=tk.Listbox(self,height=12,width=66,font=(18),exportselection=True,selectmode='SINGLE')
     self.cart_boxlist.bind('<Double-1>',dble_clk_del)
     self.cart_boxlist.bind('<BackSpace>', empty_cart)
     self.cart_boxlist.place(x=380,y=200)
-    
-    #Confirm button for items in cart
+    # Confirm button that checks out the order
     confirm_button=tk.Button(self,width=10,text='Confirm',font=('Helvetica',16,'bold'),fg='dark blue',bg='#bfbfbf',command=lambda: Confirm(self=self,
                     tk_or_sess=True,stay_name=self.session_name.cget('text')
                     ,func = orders_page.finalize))
     confirm_button.place(x=380,y=500)
-    #updates widnow for errors
+    # error window label for incorrect user input
     self.error_visor=tk.Label(self,height = 1, width = 35 ,text='',font=('Helvetica',16,'bold'),bg='#bfbfbf')
     self.error_visor.place(x=350,y=50)
-    #session name window
+    # session name label
     self.session_name=tk.Label(self,height = 1, width = 20 ,text='',font=('Helvetica',20,'bold'),bg='#bfbfbf')
     self.session_name.place(x=400,y=10)        
-    #return button
-    go_back=tk.Button(self,width=30,font=15,text=('Go Back <(----'),pady=10,bg='#bfbfbf',command=go_back)
+    # go back button
+    go_back=tk.Button(self,width=30,font=15,text=('Go Back <(----'),pady=10,bg='#bfbfbf',command=exit_seq)
     go_back.pack(side='bottom')  
-    
   def transform_enter(self,session_name,cart_in):
+    """
+    This function is called from outside the orders_page and so
+    it is not placed inside the __init__ constructor. This function
+    handles the entering of a session and fills out any beforehand
+    saved cart items.
+    """
+    # true if the session has more than one item in cart
     if len(cart_in)>1:
       for i in range(len(cart_in)):
-        app.frames['orders_page'].cart_boxlist.insert('end',cart_in[i].strip())#.replace("'",'').split(',') # 
+        app.frames['orders_page'].cart_boxlist.insert('end',cart_in[i].strip())
+    # true if the session has 1 item in which we choose the first index 
+    # as the saved tuple sometimes has a second empty index 
     elif len(cart_in)==1:
       app.frames['orders_page'].cart_boxlist.insert('end',cart_in[0].strip())#.replace("'",'').split(',') # 
+    # if the user didn't add any items before
     else:
       app.frames['orders_page'].cart_boxlist.delete(0,'end')
     app.frames['orders_page'].session_name.config(text=session_name)
     print('entered:', session_name)
-
   def transform_save(self,cart):
+    """
+    This function saves the session's cart and overwrites it
+    to the session_dict dictionary and then saves that to
+    the sessions table from database
+    """
+    # get the session's name
     session_name=app.frames['orders_page'].session_name.cget('text')
+    # save the session's cart into the dict
     if len(cart)!=0:
       session_dict[session_name].cart=cart
     else:
       session_dict[session_name].cart=''
     print('saved:',session_dict[session_name])
-#    to_db("sessions",pd.DataFrame(session_dict),exist="replace")
-
+    # save the dict to databse
     session_update()
   def finalize(df):
-      # df.to_csv(table_path,mode='a', index=False,header=False)
-        #leaveing sequence  ['item_Name','item_price','item_count','order_total','table','Stay','start_time','end_time','Time','Wifi','Paid Total']
-        session_boxlist=app.frames['session_order_page'].session_boxlist
-        index=session_boxlist.curselection()[0]
-        sess_name=session_boxlist.get(index)  
-        no_order=df['order_total'].sum()==0
-
-      #  df={'Start Time':'','End Time':'','item_total':int(),
-      #                 'NPS':int(),'NPS Price': int(),'paid total':int()} 
-        transaction_time=sessions.calculate_nps(session_dict[sess_name])
-        df['start_time']=transaction_time['start_time']
-        df['end_time']=transaction_time['end_time']
-        df['time']=transaction_time['time']
-        df['start time display']=transaction_time['start time display']
-        df['end time display']=transaction_time['end time display']
-        df['time display']=transaction_time['time display']
-        df['wifi']=transaction_time['wifi']
-        if(no_order):
-          df['wifi']+=5
-        df['paid_total'] = df['order_total'][0]+df['wifi'][0]
-        summary_page.transfrom_enter(df)      
-        app.frames['orders_page'].stacker.show_frame('summary_page')       
-        # deletion sequence
-        app.frames['orders_page'].cart_boxlist.delete(0,'end')
-        session_boxlist.delete(index)      
-        del session_dict[sess_name]
-        app.frames['orders_page'].table.set(1)   
-        #to_db("sessions",pd.DataFrame(session_dict),exist="replace")
-
-        session_update()       
-
-#recipt summary page
+    """
+    This function is run after the confirm function check out the cart.
+    This handels other transaction columns, and calls the summary_page
+    to prompt the user with the recipt.
+    parameters:
+      df: pandas dataframe that holds transaction information
+    """
+    session_boxlist=app.frames['session_order_page'].session_boxlist
+    index=session_boxlist.curselection()[0]
+    sess_name=session_boxlist.get(index)  
+    # no_order is used to add an extra 5 pound charge
+    # for cutomers who didn't order
+    no_order=df['order_total'].sum()==0
+    # get the wifi/time related transaction columns
+    transaction_time=sessions.calculate_nps(session_dict[sess_name])
+    df['start_time']=transaction_time['start_time']
+    df['end_time']=transaction_time['end_time']
+    df['time']=transaction_time['time']
+    df['start time display']=transaction_time['start time display']
+    df['end time display']=transaction_time['end time display']
+    df['time display']=transaction_time['time display']
+    df['wifi']=transaction_time['wifi']
+    if(no_order):
+      df['wifi']+=5
+    df['paid_total'] = df['order_total'][0]+df['wifi'][0]
+    # display the recipt
+    summary_page.transfrom_enter(df)      
+    app.frames['orders_page'].stacker.show_frame('summary_page')       
+    # deletion sequence of the session
+    app.frames['orders_page'].cart_boxlist.delete(0,'end')
+    session_boxlist.delete(index)      
+    del session_dict[sess_name]
+    app.frames['orders_page'].table.set(1)   
+    # update session table from database
+    session_update()       
 class summary_page(tk.Frame):
+  """
+  This page shows the final recipt on the take-away orders
+  and the session orders.
+  """
   def __init__(self, parent, stacker,bg=None,fg=None):
     tk.Frame.__init__(self, parent,bg=bg,fg=fg)
     self.stacker = stacker 
-
+    # empty labels assigned with each field of the transaction
     self.info_time =tk.Label(self ,text='',font=('Helvetica','16','bold'),
                         justify="left",bg='#bfbfbf',fg='black')
     self.info_names =tk.Label(self ,text='',font=('Helvetica','18'),
@@ -1382,6 +1470,7 @@ class summary_page(tk.Frame):
                         justify="left",fg='black')   
     self.info_paid =tk.Label(self ,text='',font=('Helvetica','23'),
                         borderwidth=1,relief="groove",justify="left",fg='black',pady=3,padx=3)      
+    # placments
     self.info_time.place(x=20,y=20)  
     self.info_names.place(x=20,y=200)
     self.info_p.place(x=480,y=200)
@@ -1389,20 +1478,34 @@ class summary_page(tk.Frame):
     self.info_t.place(x=720,y=200)  
     self.info_h.place(x=20,y=160)
     self.info_paid.place(x=800,y=160)
-
+    # exit button that records the transaction into the transactions
+    # table from database
     btn_paid = tk.Button(self,width=10,height=2,text='Paid'
                       ,bg='#0a6300',font=('lucida','12','bold'),fg='#d9d9d9',command=lambda :summary_page.paid(self.curr_data))
-
     btn_paid.place(x=500,y=20)
   def paid(df):
-   # df.drop_duplicates(inplace=True)  
+    """
+    Function that confirms the completion of the transaction and
+    appends the transaction information as a row in the transaction
+    table from database
+    parameters:
+      df: pandas dataframe that holds all the transaction columns and info
+    """
+    # cleaning
     df.drop(['item_name','item_price','start time display','end time display','time display'],axis=1,inplace=True)  
-    to_db("transactions",df,exist="append")
-    #to_csv(transaction_path,mode='a', index=False,header=False)        
+    # append row
+    to_db("transactions",df,exist="append")       
     app.frames['summary_page'].stacker.show_frame('session_order_page')
   def transfrom_enter(df):
-    # self arrtibute to be transferd to the init fucntion button btn_paid
+    """
+    This function fills the transaction columns onto 
+    the empty labels created in the __init__ constructor
+    """
+    # curr_data is used as a transportaion variable that holds the dataframe's
+    # information from outside the class and then assigns it to the current page
+    # object, so that it could be accessed from an inner class
     app.frames['summary_page'].curr_data= df
+    # fill the empty fields
     recipt_time="{}\n\nStart Time: {}\nEnded:        {}\nTime Stayed: {}".format(df['stay'][0]
                                                                                 ,df['start time display'][0]
                                                                                 ,df['end time display'][0],
@@ -1438,29 +1541,18 @@ class summary_page(tk.Frame):
                                                                 recipt_head,
                                                                 recipt_paid)):
       g.config(text=i)
-
-  
 if __name__ == "__main__":
-  #cur_dir=os.path.dirname(os.path.abspath(__file__))
-
+  # open configration settings
   with open(f'{cur_dir}\config.json','r+') as json_file:
     config_data = json.load(json_file)
-  # empty dataframe to delete
-  empty = pd.DataFrame(list())  
-
+  # reset the counters to zero incase the current saved date
+  # on the config file doesn't match today
   if config_data['today'] == dt.now().strftime('%Y-%m-%d'):
     table_counter= config_data['session_num']
     take_away_counter=config_data['tk_num']
     stock_counter=config_data['stock_num']
     book_counter=config_data['book_num']
-    today=config_data['today']
-
- #   transaction_path=f"{cur_dir}\-transactions\-transactions({today}).csv"
-    # test if the csv exists
-    """try:
-      tr=pd.read_csv(transaction_path)
-    except:     
-      empty.to_csv(transaction_path)"""         
+    today=config_data['today']   
   else: 
     # Change config file's date to today's date
     config_data['today']=dt.now().strftime('%Y-%m-%d')
@@ -1469,38 +1561,14 @@ if __name__ == "__main__":
     # write the new change into the config.json file
     with open(f"{cur_dir}\config.json", "w") as outfile:
       json.dump(config_data,outfile,indent=4)
-      
+    # assign the new counters
     table_counter= config_data['session_num']
     take_away_counter=config_data['tk_num']
     stock_counter=config_data['stock_num']
     book_counter=config_data['book_num']
-
     today=config_data['today']
-
-   # transaction_path=f"{cur_dir}\-transactions\-transactions({today}).csv"
-    # test if the csv exists
-    """try:
-      tr=pd.read_csv(transaction_path)
-    except:     
-      empty.to_csv(transaction_path)"""     
-  """session_path=f"{cur_dir}\sessions.csv"
-  services_path=f"{cur_dir}\services.csv"
-  #create empty csv file to store the files
-  #empty.to_csv(table_path)   
-  try:
-    tr=pd.read_csv(session_path)
-  except:     
-    empty.to_csv(session_path)   
-  try:
-    tr=pd.read_csv(services_path)
-  except:     
-    empty.to_csv(services_path) """  
-  
-  #information     
   print(f"{config_data['today']}: {config_data['session_num']} sessions")
-
   #driver
   app = main_app()
   open_sessions()
-
   app.mainloop()
