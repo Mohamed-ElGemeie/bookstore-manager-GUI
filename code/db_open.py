@@ -2,23 +2,47 @@ import pandas as pd
 import os
 from sqlalchemy import create_engine
 import mysql.connector as mc
-
 def truncate(table):
+    """
+    Used to truncate the specified table contents from the
+    database.
+    parameters:
+        table: database's table name to be selected 
+    """
     with  mc.connect(host="localhost",user='root',passwd="KOKOWaWa1Ak9mysql",database='db_bookstore') as db:
         cursor=db.cursor()
         cursor.execute(f"TRUNCATE TABLE {table}")
 def run(command):
+    """
+    Used to return the result of a SQL command query
+    as a pandas dataframe object
+    parameters:
+        command: database's table name to be selected 
+    return:
+        query: pandas dataframe object
+    """
     query=pd.read_sql(sql=command,con=engine)
     return query
 def look(table):
+    """
+    Used to return the specified table's content from the
+    database and returns a pandas dataframe of that table.
+    parameters:
+        table: database's table name to be selected 
+    return:
+        query: pandas dataframe object
+    """    
     query=pd.read_sql(sql=f"SELECT * FROM {table}",con=engine)
-    #cursor.excute("SELECT * FROM {db_name}.{table}").fetchall()
     return query
 def to_db(table,df,exist):
+    """
+    Used to append/overwrite a pandas dataframe object onto 
+    a SQL table from database
+    """
     print("-\n"*6,df.info(),"-\n"*5)
+    # start connection to database
     with engine.begin() as connection:
         df.to_sql(table,con=connection,if_exists=exist,index=False)
-
 if __name__ != "__main__":
     cur_dir=os.path.dirname(os.path.abspath(__file__))
     engine = create_engine("mysql+pymysql://root:KOKOWaWa1Ak9mysql@localhost:3306/db_bookstore")
