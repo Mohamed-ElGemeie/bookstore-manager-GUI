@@ -1,3 +1,5 @@
+# Created By Mohamed Galal Elgemeie
+# all rights reserved
 import tkinter as tk
 import pandas as pd
 from datetime import datetime as dt, timedelta
@@ -1572,3 +1574,5 @@ if __name__ == "__main__":
   app = main_app()
   open_sessions()
   app.mainloop()
+# Created By Mohamed Galal Elgemeie
+# all rights reserved
