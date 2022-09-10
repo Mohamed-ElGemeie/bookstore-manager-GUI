@@ -1,3 +1,5 @@
+# Created By Mohamed Galal Elgemeie
+# all rights reserved
 import pandas as pd
 import os
 from sqlalchemy import create_engine
@@ -53,3 +55,5 @@ if __name__ != "__main__":
     df_st=look("stock")
     # books
     df_se=look("books")
+# Created By Mohamed Galal Elgemeie
+# all rights reserved
