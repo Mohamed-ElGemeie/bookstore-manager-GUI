@@ -11,7 +11,7 @@ def truncate(table):
     parameters:
         table: database's table name to be selected 
     """
-    with  mc.connect(host="localhost",user='root',passwd="KOKOWaWa1Ak9mysql",database='db_bookstore') as db:
+    with  mc.connect(host="localhost",user='root',passwd="your_sql_server_passcode",database='your_db_name') as db:
         cursor=db.cursor()
         cursor.execute(f"TRUNCATE TABLE {table}")
 def run(command):
@@ -47,7 +47,7 @@ def to_db(table,df,exist):
         df.to_sql(table,con=connection,if_exists=exist,index=False)
 if __name__ != "__main__":
     cur_dir=os.path.dirname(os.path.abspath(__file__))
-    engine = create_engine("mysql+pymysql://root:KOKOWaWa1Ak9mysql@localhost:3306/db_bookstore")
+    engine = create_engine("mysql+pymysql://root:your_sql_server_passcode@localhost:3306/your_db_name")
     amount=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
     # Menu
     df_pd=look("items")
