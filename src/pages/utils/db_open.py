@@ -65,11 +65,9 @@ if __name__ != "__main__":
     
     link = f"mysql+pymysql://{db_info['user']}:{db_info['sql_server_passcode']}@{db_info['host']}:{db_info['port']}/{db_info['db_name']}"
     engine = create_engine(link)
-    amount=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
     # Menu
-    df_pd=look("items")
-    # Stock
-    df_st=look("stock")
+    df_menu=look("items")
+
 
 
 

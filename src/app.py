@@ -1,5 +1,6 @@
 import tkinter as tk
 from pages.PrintPage import *
+from pages.TakeawayPage import *
 
 class App(tk.Tk):
   
@@ -24,29 +25,33 @@ class App(tk.Tk):
     stacker.grid_columnconfigure(0,weight=1)
 
 
-    pages = (PrintPage,PrintPage)
-    page_names = ("كتب Books","كتب Books")
+    pages = (PrintPage,TakeawayPage)
+    page_names = ("Books/كتب","Takeaway/تيك اواى")
     self.frames = {}
-    
+    self.buttons = {}
 
     for i,g in zip(pages,page_names):
         
         page_name=i.__name__
 
+        def display(x = page_name):
+           self.show_frame(x)
+
         frame= i(stacker,self,bg='#48788a')
         self.frames[page_name]= frame
         frame.grid(row=0,column=0,sticky='nsew')
 
-        tk.Button(buttons,font=30,width=20,height=2,text=(g),command=lambda: self.show_frame(page_name)).pack(side="left")
+        print(page_name)
+        self.buttons[page_name] = tk.Button(buttons,
+                                            font=30,width=20,height=2
+                                            ,text=(g),
+                                            command = display).pack(side="left")
 
     buttons.pack(side="top",fill="x")
     stacker.pack(side="bottom",fill='both',expand=True)
 
-    # self.frames: holds all the tkinter frames
-    # {tkinter page-name string : tkinter page object}
-    # holds all the classes the inherante the tkiner frame
+    self.show_frame(PrintPage.__name__)
 
-    # opens the startpage on start up
 
   def show_frame(self,page_name):
     """
@@ -54,6 +59,7 @@ class App(tk.Tk):
     parameters:
       page_name: name of the page's tkinter frame class
     """
+    print(page_name)
     frame=self.frames[page_name]
     frame.tkraise()
 
