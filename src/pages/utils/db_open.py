@@ -6,8 +6,8 @@ from sqlalchemy import create_engine
 import mysql.connector as mc
 import json
 from .settings import config_data
-
-
+from pandas import DataFrame
+from datetime import datetime as dt
 def truncate(table):
     """
     Used to truncate the specified table contents from the
@@ -56,6 +56,17 @@ def to_db(table,df,exist):
     with engine.begin() as connection:
         df.to_sql(table,con=connection,if_exists=exist,index=False)
 
+def create_transaction_id(type):
+
+    start_time = dt.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    temp_df= DataFrame({'start_time': [start_time], 'type': [type]})
+
+    to_db("transactions",temp_df,exist="append")
+
+    response = run(f"SELECT * FROM transactions WHERE start_time = '{start_time}'")
+
+    return response["id"]
 
 
 if __name__ != "__main__":
@@ -66,8 +77,7 @@ if __name__ != "__main__":
     link = f"mysql+pymysql://{db_info['user']}:{db_info['sql_server_passcode']}@{db_info['host']}:{db_info['port']}/{db_info['db_name']}"
     engine = create_engine(link)
     # Menu
-    df_menu=look("items")
-
+    df_menu=look("item")
 
 
 

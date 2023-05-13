@@ -1,19 +1,6 @@
-use db_bookstore;
+Use db_bookstore;
 
-ALTER TABLE print
-ADD FOREIGN KEY (tran_id) REFERENCES transactions(id);
-
-ALTER TABLE takeaway
-ADD FOREIGN KEY (tran_id) REFERENCES transactions(id);
-
-ALTER TABLE indoor
-ADD FOREIGN KEY (tran_id) REFERENCES transactions(id);
-
-ALTER TABLE indoor_detail
-ADD FOREIGN KEY (tran_id) REFERENCES transactions(id);
-
-ALTER TABLE indoor
-ADD FOREIGN KEY (item_id) REFERENCES items(id);
-
-ALTER TABLE takeaway
-ADD FOREIGN KEY (item_id) REFERENCES items(id);
+ALTER TABLE instore ADD FOREIGN KEY (tran_id) REFERENCES transactions(id) ON DELETE SET NULL;
+ALTER TABLE order_group ADD FOREIGN KEY (tran_id) REFERENCES transactions(id) ON DELETE SET NULL;
+ALTER TABLE order_group ADD FOREIGN KEY (item_id) REFERENCES item(id) ON DELETE SET NULL;
+ALTER TABLE print_stock ADD FOREIGN KEY (tran_id) REFERENCES transactions(id) ON DELETE SET NULL;
