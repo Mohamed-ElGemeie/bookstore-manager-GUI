@@ -50,7 +50,7 @@ class App(tk.Tk):
     buttons.pack(side="top",fill="x")
     stacker.pack(side="bottom",fill='both',expand=True)
 
-    self.show_frame(PrintPage.__name__)
+    self.show_frame(TakeawayPage.__name__)
 
 
   def show_frame(self,page_name):

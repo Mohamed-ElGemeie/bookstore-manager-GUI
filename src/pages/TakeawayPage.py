@@ -24,70 +24,57 @@ class TakeawayPage(tk.Frame):
         item: list object that contains the items to be filled
       """
 
-      self.entries_boxllist.delete(0,tk.END)
+      self.menu_lb.delete(0,tk.END)
 
       for i in item:
-        self.entries_boxllist.insert(tk.END,i)
+        self.menu_lb.insert(tk.END,i)
 
-    # def dble_clk_del(e):
-    #   """
-    #   Event function that delets an item row from the list box cart when double clicked on
-    #   by the user.
-    #   """
+    def delete_all():
+      self.cart = {}
+      self.cart_lb.delete(0,tk.END)
 
-    #   if self.cart_boxlist.curselection():
-    #     self.cart_boxlist.delete(self.cart_boxlist.curselection()) 
+    def fill_cart():
+      self.cart_lb.delete(0,tk.END)
 
-    #   else:
-    #     sleep(0.3)
+      for i in self.cart.keys():
+        self.cart_lb.insert(tk.END,f"{i} * {self.cart[i]['amount']} = {self.cart[i]['total']}")
 
-    # def tab_handler(e):
-    #   """
-    #   Event function run on pressing tab while selecting the entry box,
-    #   this function selects the first item that appears on the list box
-    #   and assign that to the user's entry box
-    #   """
-            
-    #   if order_items.get() and entries_boxllist.size():
 
-    #     # clear selection, delete the user's entry box
-    #     entries_boxllist.selection_clear(0, 'end')
-    #     order_items.delete(0,tk.END)        
+      self.user_order_e.focus()
 
-    #     # select the first index of menu list box and append it to the user's entry box
-    #     entries_boxllist.select_set(0)                      
-    #     order_items.insert(0,entries_boxllist.get(entries_boxllist.curselection()))
+    def remove_item(e):
+      
+      idx = self.cart_lb.curselection()[0]
+      idx = self.cart_lb.get(idx).split('*')[0].strip()
+      if(self.cart[idx]["amount"] <= 1):
+        del self.cart[idx]
+      else:
+        self.cart[idx]["amount"] -=1
+        self.cart[idx]["total"] -= self.cart[idx]["price"] 
 
-    #   order_items.focus()  
+      fill_cart()
 
-    def add_item():
+    def add_item(e):
         """
         This function adds items to the cart listbox specified by the user,
         also handels repeated item entries and incorrect user inputs
         """
 
-        item_count = int(self.order_amount_var.get())
+        item_name = self.user_order_e.get()
+        item_price = int(df_menu[df_menu['name']== item_name].reset_index(drop = True).price_ta)
 
-        item = validate_string(self.order_items.get(),
-                             self.error_visor,
-                             "Please select an order/الرجاء اختيار طلب")
+        if(self.cart.get(item_name ,False)):
+          self.cart[self.user_order_e.get()]["amount"] += 1
+          self.cart[self.user_order_e.get()]["total"] += item_price
 
-        in_menu = validate_look_up(item,
-                                    self.error_visor,
-                                    "Incorrect order, Pick from the list/اختيار غير صحيح ، اختر من القائمة")
-
-
-        if item and in_menu:
-
-            x=df_menu[df_menu['name']==item].reset_index(drop = True).price_ta
-            # add_var: is used to decide if the item already exists in the list box 
-            # or not, this ensures that repeated items share the same row
-            add_var=False  
-            # loop over the cart box list
-            for i in range(self.cart_boxlist.size()):
-                print(self.cart_boxlist.get(i))
-            self.order_items.focus()
+        else:
+          self.cart[self.user_order_e.get()] = {"price": item_price, "amount" : 1, "total":item_price}
+           
       
+        fill_cart()
+
+
+    
     def fillout(e):
       
       """
@@ -97,13 +84,13 @@ class TakeawayPage(tk.Frame):
       * the selected item then is auto filled into the user entry box.
       """
 
-      self.order_items.delete(0,tk.END)
+      self.user_order_e.delete(0,tk.END)
 
       # add selected item to user's entry box     
-      if self.entries_boxllist.get(self.entries_boxllist.curselection()):
-        self.order_items.insert(0,self.entries_boxllist.get(self.entries_boxllist.curselection()))   
+      if self.menu_lb.get(self.menu_lb.curselection()):
+        self.user_order_e.insert(0,self.menu_lb.get(self.menu_lb.curselection()))   
 
-    def check(e):
+    def find_match(e):
         
         """
         Event function that takes all the item in the dataframe
@@ -113,7 +100,7 @@ class TakeawayPage(tk.Frame):
         * uses python's 'in' operator
         """
 
-        user_input = self.order_items.get().lower()
+        user_input = self.user_order_e.get().lower()
         displayed_data=[]
 
         # assign the whole dataframe if the user's input is empty
@@ -127,9 +114,9 @@ class TakeawayPage(tk.Frame):
 
         # display the list of similar items onto the menu list box
         listbox_update(displayed_data)
-        self.entries_boxllist.select_set(0)
+        self.menu_lb.select_set(0)
 
-    def finalize(df):
+    def buy():
 
         """
         This function is run after the confirm function check out the cart.
@@ -138,47 +125,46 @@ class TakeawayPage(tk.Frame):
         parameters:
         df: pandas dataframe that holds transaction information
         """
-        print(df)
+
+        print(self.cart)
     
+
     # vars
-    self.amount=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
+    self.cart = {}
 
-    # top label
-    self.item_label = tk.Label(self,height = 1, width = 10 ,text=('Orders'),font=('Helvetica',16,'bold'),bg='#bfbfbf')
-    self.item_label.place(x=15,y=110)
+    # entry
+    self.user_order_e=tk.Entry(self,width=20,font=("Times",20))
+    
+    # list boxes
+    self.menu_lb=tk.Listbox(self,height=20,width=30,font=(20),exportselection=False,selectmode='MULTIPLE')
+    self.cart_lb=tk.Listbox(self,height=20,width=30,font=(20),exportselection=False,selectmode='MULTIPLE')
 
-    # user entry box
-    self.order_items=tk.Entry(self,width=20,font=("Times",20))
-    self.order_items.place(x=15,y=150)
+    # buttons
+    self.delete_cart_b=tk.Button(self,width=10,text='Delete',font=('Helvetica',16,'bold'),fg='red',bg='#bfbfbf'
+                                 , command=delete_all)
+    self.confirm_cart_b= tk.Button(self,width=10,text='Confirm',font=('Helvetica',16,'bold'),fg='blue',bg='#bfbfbf'
+                                 , command=buy)
+    # labels
+    self.menu_l = tk.Label(self,height = 1, width = 10 ,text=('Menu'),font=('Helvetica',16,'bold'),bg='#bfbfbf')
+    self.error_visor=tk.Label(self,height = 1, width = 35 ,text='',font=('Helvetica',16,'bold'),bg='#bfbfbf')
 
-    # count of item option box + vars
-    self.order_amount_var=tk.StringVar()
-    self.order_amount_var.set(1)
-    self.order_amount_menu = tk.OptionMenu(self, self.order_amount_var, *self.amount)
-    self.order_amount_menu.place(x=300,y=153)  
 
-    # user's cart list box
-    self.entries_boxllist=tk.Listbox(self,width=30,font=(16),exportselection=False,selectmode='MULTIPLE')
-    self.entries_boxllist.place(x=15,y=200)    
-
-    # fill the menu with the menu dataframe
-    listbox_update(df_menu['name'].tolist())
+    # placements
+    self.menu_l.place(x=15,y=20)
+    self.user_order_e.place(x=15,y=60)
+    self.menu_lb.place(x=15,y=110)    
+    self.cart_lb.place(x=550,y=110)
+    self.delete_cart_b.place(x=380,y=110)    
+    self.error_visor.place(x=350,y=50)
 
     # bindings        
-    self.entries_boxllist.bind('<<ListboxSelect>>',fillout)
-    self.order_items.bind("<KeyRelease>",check)
+    self.menu_lb.bind('<<ListboxSelect>>',fillout)
+    self.user_order_e.bind("<KeyRelease>",find_match)
+    self.menu_lb.bind('<Double-Button-1>', add_item)
+    self.cart_lb.bind('<Double-Button-1>', remove_item)
 
-    # insert item from menu to cart button
-    self.btn_insert_item=tk.Button(self,width=10,text=('Add'),font=('Helvetica',16,'bold'),bg='#bfbfbf',command=add_item)
-    self.btn_insert_item.place(x=380,y=148)
-
-    # user's cart list box + bindings
-    self.cart_boxlist=tk.Listbox(self,height=12,width=66,font=(18),exportselection=True,selectmode='SINGLE')
-    self.cart_boxlist.place(x=380,y=200)
-    
-    # delete all items from cart button
-    self.delete_cart_btn=tk.Button(self,width=10,text='Delete',font=('Helvetica',16,'bold'),fg='red',bg='#bfbfbf', command=self.cart_boxlist.delete(0,'end'))
-    self.delete_cart_btn.place(x=570,y=147)    
+    # fill in the menu
+    listbox_update(df_menu['name'].tolist())
 
 
 
@@ -188,12 +174,8 @@ class TakeawayPage(tk.Frame):
     #                 ,func = orders_page.finalize))
     # confirm_button.place(x=380,y=500)
     # error window label for incorrect user input
-    self.error_visor=tk.Label(self,height = 1, width = 35 ,text='',font=('Helvetica',16,'bold'),bg='#bfbfbf')
-    self.error_visor.place(x=350,y=50)
 
     # session name label
-    self.session_name=tk.Label(self,height = 1, width = 20 ,text='',font=('Helvetica',20,'bold'),bg='#bfbfbf')
-    self.session_name.place(x=400,y=10)        
 
 
     # session_boxlist=app.frames['session_order_page'].session_boxlist
