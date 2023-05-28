@@ -1,21 +1,19 @@
 import json
 
-def update_config(data):
-  """
-  Function that update the config.json file with the config_data dictionary
-  * if any changes were made to config_data, they will be saved externally to config.json
-  """
-  with open(config_path, "w") as outfile:
+def update_json(data,name):
+  with open(paths[name], "w") as outfile:
+    print(data)
+    json.dump(data,outfile,indent=4,default=str)
 
-    json.dump(data,outfile,indent=4)
+def load_json(name):
 
-def load_config():
+  with open(paths[name],'r+') as json_file:
 
-    with open(f'{config_path}','r+') as json_file:
-
-        return json.load(json_file)
+    return json.load(json_file)
+  
     
 if __name__ != "__main__":
-   
-   config_path = 'src\config\config.json'
-   config_data = load_config()
+   paths = {'config': "src\config\config.json",
+            'table_carts':"src\config\\tables.json",
+            'table_times':"src\config\\table_times.json",
+            'database_config':"src\config\db_config.json"}

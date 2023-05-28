@@ -5,9 +5,11 @@ import pandas as pd
 from sqlalchemy import create_engine
 import mysql.connector as mc
 import json
-from .settings import config_data
+from .settings import load_json
 from pandas import DataFrame
 from datetime import datetime as dt
+
+
 def truncate(table):
     """
     Used to truncate the specified table contents from the
@@ -15,6 +17,9 @@ def truncate(table):
     parameters:
         table: database's table name to be selected 
     """
+
+    config_data = load_json('config')
+
     with  mc.connect(host="localhost",user='root',passwd=config_data['sql_server_passcode'],database=config_data['db_name']) as db:
         cursor=db.cursor()
         cursor.execute(f"TRUNCATE TABLE {table}")
@@ -61,18 +66,17 @@ def create_transaction_id(type):
     start_time = dt.now().strftime('%Y-%m-%d %H:%M:%S')
 
     temp_df= DataFrame({'start_time': [start_time], 'type': [type]})
-
+    print(temp_df)
     to_db("transactions",temp_df,exist="append")
 
     response = run(f"SELECT * FROM transactions WHERE start_time = '{start_time}'")
 
-    return response["id"]
+    return int(response["id"])
 
 
 if __name__ != "__main__":
 
-    with open(f'src\config\db_config.json','r+') as json_file:
-        db_info = json.load(json_file)
+    db_info = load_json('database_config')
     
     link = f"mysql+pymysql://{db_info['user']}:{db_info['sql_server_passcode']}@{db_info['host']}:{db_info['port']}/{db_info['db_name']}"
     engine = create_engine(link)
