@@ -15,6 +15,7 @@ class SessionPage(TakeawayPage,tk.Frame):
     super().__init__(stacker=stacker,parent= parent,bg=bg,fg=fg)
     self.stacker = stacker
 
+    print(self.menu_f)
     self.tables_b = {}   
     self.tables = load_json('table_carts')
     self.table_times = load_json('table_times')
@@ -50,7 +51,10 @@ class SessionPage(TakeawayPage,tk.Frame):
     
     self.start_time_b = tk.Button(self,text='Start Time/ابدأ الوقت',font=('Helvetica',16,'bold'),fg='green',bg='#bfbfbf'
                                  , command= lambda self=self: SessionPage.start_time(self))
-
+    
+    self.reset_time_b = tk.Button(self,text='reset Time/إعادة الوقت',font=('Helvetica',10,'bold'),fg='red',bg='#bfbfbf'
+                                 , command= lambda self=self: SessionPage.delete_time(self))
+  
     
     for i in range(20):
         self.tables_b[i] = tk.Button(self.map_l,command=lambda self=self, table_num = str(i): SessionPage.select_table(self,table_num)
@@ -66,13 +70,14 @@ class SessionPage(TakeawayPage,tk.Frame):
     # placements
     self.menu_l.place(x=15,y=20)
     self.user_order_e.place(x=15,y=60)
-    self.menu_lb.place(x=15,y=110)    
-    self.cart_lb.place(x=380,y=110)
+    self.menu_f.place(x=15,y=110)    
+    self.cart_f.place(x=370,y=110)
     self.delete_cart_b.place(x=380,y=60)    
-    self.error_visor.place(x=350,y=10)
+    self.error_visor.place(x=250,y=10)
     self.confirm_cart_b.place(x=580,y=60)
     self.map_l.place(x=730,y=110)
     self.start_time_b.place(x=750,y=60)
+    self.reset_time_b.place(x=750,y=20)
     self.total_l.place(x=1120, y =280)
     self.total_info_l.place(x=1120, y=250)
     self.time_passed_l.place(x=970, y=60)
@@ -104,10 +109,10 @@ class SessionPage(TakeawayPage,tk.Frame):
 
       else: 
         time_passed = dt.now() - dt.strptime(self.table_times[self.selected_table],'%Y-%m-%d %H:%M:%S.%f')
-        time_passed -= timedelta(days=time_passed.days,microseconds=time_passed.microseconds)
+        time_passed_display = time_passed - timedelta(microseconds=time_passed.microseconds)
 
 
-        hours = time_passed.seconds/3600
+        hours = time_passed.total_seconds()/3600
         wifi = 0
 
         if hours >= 5:
@@ -116,9 +121,20 @@ class SessionPage(TakeawayPage,tk.Frame):
           wifi = (int(hours) * 5) + 5
 
         self.wifi_l.config(text=wifi)
-        self.time_passed_l.config(text= str(time_passed))
+        self.time_passed_l.config(text= str(time_passed_display))
      
-     
+  def delete_time(self):
+    if self.selected_table == '-1':
+      self.error_visor.config(text="Please Select one of the tables/الرجاء اختيار طاولة")
+      return False
+    
+    self.table_times[self.selected_table] = {}
+
+    self.wifi_change_l.config(text='0')
+
+    update_json(self.table_times,'table_times')
+
+
   def start_time(self):
     if self.selected_table == '-1':
       self.error_visor.config(text="Please Select one of the tables/الرجاء اختيار طاولة")
@@ -251,9 +267,11 @@ class SessionPage(TakeawayPage,tk.Frame):
 
         return False  
       
+      wifi = int(self.wifi_change_l.cget('text')) + int(self.wifi_l.cget('text'))
+
       self.cart['wifi'] = {"price": int(self.wifi_l.cget('text')),
-            "amount": f"{int(self.wifi_change_l.cget('text'))} سلبي ",
-            "total": int(self.wifi_change_l.cget('text')) + int(self.wifi_l.cget('text')),
+            "amount": f"{int(self.wifi_change_l.cget('text'))} زيادة ",
+            "total": wifi,
             "id": -1}
 
       new_id = super().buy(tran_type= "Instore") 
@@ -262,9 +280,12 @@ class SessionPage(TakeawayPage,tk.Frame):
         return False
       
       df_dict = {'tran_id':[new_id], 'table_num': [self.selected_table],
-                   'end_time':[dt.now()]}
+                   'end_time':[dt.now()],'wifi':[wifi]}
       df = DataFrame(df_dict)
+
+
       print(df)
+      
       to_db('instore', df, 'append')
       SessionPage.update_cart_json(self)
       self.wifi_change_l.config(text='0')

@@ -34,7 +34,7 @@ class PrintPage(tk.Frame):
 
         # create paper transaction row
         temp_df= DataFrame({'name': ["paper"],
-                            'total_price': [paper*0.75],
+                            'price': [0.75],
                             'amount':paper,
                             'tran_id':create_transaction_id("Print/Stock")})
 
@@ -71,7 +71,7 @@ class PrintPage(tk.Frame):
 
         # create paper transaction row
         temp_df= DataFrame({'name': [name],
-                            'total_price': [price],
+                            'price': [price],
                             'amount': [amount],
                             'tran_id':create_transaction_id("Print/Stock")})
 

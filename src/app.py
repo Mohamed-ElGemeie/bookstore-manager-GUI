@@ -2,6 +2,7 @@ import tkinter as tk
 from pages.PrintPage import *
 from pages.TakeawayPage import *
 from pages.SessionPage import *
+from pages.AnalysisPage import *
 
 class App(tk.Tk):
   
@@ -26,8 +27,8 @@ class App(tk.Tk):
     stacker.grid_columnconfigure(0,weight=1)
 
 
-    pages = (PrintPage,TakeawayPage,SessionPage)
-    page_names = ("Books/كتب","Takeaway/تيك اواى","Tables/طاولات")
+    pages = (PrintPage,TakeawayPage,SessionPage,AnalysisPage)
+    page_names = ("Books/كتب","Takeaway/تيك اواى","Tables/طاولات","Report/جرد")
     self.frames = {}
     self.buttons = {}
 
@@ -51,7 +52,7 @@ class App(tk.Tk):
     buttons.pack(side="top",fill="x")
     stacker.pack(side="bottom",fill='both',expand=True)
 
-    self.show_frame(SessionPage.__name__)
+    self.show_frame(AnalysisPage.__name__)
 
 
   def show_frame(self,page_name):

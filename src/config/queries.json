@@ -1,0 +1,12 @@
+{
+    "total_instore": "SELECT IFNULL(sum(i.price) + (SELECT sum(wifi) as \"total\" FROM db_bookstore.transactions t left join instore i on t.id = i.tran_id where date(t.start_time) BETWEEN \"[FROM]\" AND \"[TO]\"),0) as \"Total\" FROM db_bookstore.transactions t left join db_bookstore.order_group og on t.id = og.tran_id left join db_bookstore.item i on i.id = og.item_id where type =\"Instore\" and date(t.start_time) BETWEEN \"[FROM]\" AND \"[TO]\"",
+    "count_instore":"SELECT IFNULL(count(*),0) as \"count\" FROM db_bookstore.transactions where type = \"Instore\" and date(start_time) between \"[FROM]\" and \"[TO]\"",
+    "total_takeaway":"SELECT IFNULL(sum(price_ta),0) as \"total\" from db_bookstore.transactions t left join db_bookstore.order_group og on og.tran_id = t.id left join db_bookstore.item i  on i.id = og.item_id where type = \"TakeAway\" and date(start_time) between \"[FROM]\" and \"[TO]\"",
+    "count_takeaway":"SELECT IFNULL(count(*),0) as \"count\" FROM db_bookstore.transactions where type = \"TakeAway\" and date(start_time) between \"[FROM]\" and \"[TO]\"",
+    "total_library":"SELECT ifnull(sum(p.price*p.amount),0) as \"total\" FROM db_bookstore.transactions t left join print_stock p on t.id = p.tran_id where date(t.start_time) between \"[FROM]\" AND \"[TO]\"",
+    "count_library":"SELECT IFNULL(count(*),0) as \"count\" FROM db_bookstore.transactions where type = \"Print/Stock\" and date(start_time) between \"[FROM]\" and \"[TO]\"",
+    "count_profit":"SELECT count(*) as \"count\" FROM db_bookstore.transactions where date(start_time) between \"[FROM]\" and \"[TO]\"",
+    "Instore":"SELECT ins.table_num as \"Table\",i.name,i.price,ins.end_time,ins.wifi,t.start_time FROM db_bookstore.transactions t left join db_bookstore.order_group og on og.tran_id =  t.id left join db_bookstore.item i  on i.id = og.item_id left join db_bookstore.instore ins on ins.tran_id = t.id where t.type = \"Instore\" and date(t.start_time) between \"[FROM]\" and \"[TO]\";",
+    "TakeAway":"SELECT og.tran_id as \"Order\",i.name,i.price,t.start_time FROM db_bookstore.transactions t left join db_bookstore.order_group og on og.tran_id =  t.id left join db_bookstore.item i  on i.id = og.item_id where t.type = \"TakeAway\" and date(t.start_time) between \"[FROM]\" and \"[TO]\";",
+    "Print":"SELECT name, price, amount , price * amount as \"Total\" , t.start_time FROM db_bookstore.print_stock p left join db_bookstore.transactions t on p.tran_id = t.id where date(start_time) between \"[FROM]\" and \"[TO]\";"
+}

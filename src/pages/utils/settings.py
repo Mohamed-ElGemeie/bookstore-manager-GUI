@@ -16,4 +16,5 @@ if __name__ != "__main__":
    paths = {'config': "src\config\config.json",
             'table_carts':"src\config\\tables.json",
             'table_times':"src\config\\table_times.json",
-            'database_config':"src\config\db_config.json"}
+            'database_config':"src\config\db_config.json",
+            "queries":"src\config\queries.json"}

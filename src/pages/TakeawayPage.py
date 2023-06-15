@@ -25,9 +25,18 @@ class TakeawayPage(tk.Frame):
     # entry
     self.user_order_e=tk.Entry(self,width=20,font=("Times",20))
     
-    # list boxes
-    self.menu_lb=tk.Listbox(self,height=20,width=30,font=(20),exportselection=False,selectmode='MULTIPLE')
-    self.cart_lb=tk.Listbox(self,height=20,width=30,font=(20),exportselection=False,selectmode='MULTIPLE')
+    # Frames
+    self.menu_f = tk.Frame(self,bg ="white",width=400,height=250)
+    self.cart_f = tk.Frame(self,bg ="white",width=400,height=250)
+
+    # list boxes and scrollbars
+
+    self.menu_lb=tk.Listbox(self.menu_f,height=20,width=30,font=(20),exportselection=False,selectmode='MULTIPLE')
+    self.menu_sb = tk.Scrollbar(self.menu_f)
+
+    self.cart_lb=tk.Listbox(self.cart_f,height=20,width=30,font=(20),exportselection=False,selectmode='MULTIPLE')
+    self.cart_sb = tk.Scrollbar(self.cart_f)
+
 
     # buttons
     self.delete_cart_b=tk.Button(self,width=10,text='Delete',font=('Helvetica',16,'bold'),fg='red',bg='#bfbfbf'
@@ -42,19 +51,29 @@ class TakeawayPage(tk.Frame):
     # placements
     self.menu_l.place(x=15,y=20)
     self.user_order_e.place(x=15,y=60)
-    self.menu_lb.place(x=15,y=110)    
-    self.cart_lb.place(x=550,y=110)
+    self.menu_f.place(x=15,y=110)    
+    self.cart_f.place(x=550,y=110)
     self.delete_cart_b.place(x=380,y=60)    
     self.error_visor.place(x=350,y=10)
     self.confirm_cart_b.place(x=580,y=60)
     self.total_l.place(x=1090,y=60)
+    self.menu_lb.pack(side="left",fill="both")
+    self.menu_sb.pack(side="right",fill="both")
+    self.cart_lb.pack(side="left",fill="both")
+    self.cart_sb.pack(side="right",fill="both")
 
     # bindings        
     self.menu_lb.bind('<<ListboxSelect>>',lambda x, self =self: TakeawayPage.fillout(self))
     self.user_order_e.bind("<KeyRelease>",lambda x, self =self: TakeawayPage.find_match(self))
     self.menu_lb.bind('<Double-Button-1>',lambda x, self =self: TakeawayPage.add_item(self))
     self.cart_lb.bind('<Double-Button-1>',lambda x, self=self: TakeawayPage.remove_item(self))
-    
+
+    self.menu_lb.config(yscrollcommand =  self.menu_sb.set)
+    self.menu_sb.config(command = self.menu_lb.yview)
+
+    self.cart_lb.config(yscrollcommand =  self.cart_sb.set)
+    self.cart_sb.config(command = self.cart_lb.yview)
+
     # fill in the menu
     TakeawayPage.listbox_update(self,df_menu['name'].tolist())
 
@@ -194,8 +213,13 @@ class TakeawayPage(tk.Frame):
   def recipt(self):
     
     pop_up = tk.Tk()
+    
+    wifi = 0
 
-    msg = [['Name/اسم','Price/سعر','Amount/عدد','Total',self.total_l['text']]]
+    if(self.cart.get('wifi')):
+      wifi = self.cart['wifi']['total']
+
+    msg = [['Name/اسم','Price/سعر','Amount/عدد','Total',self.total_l['text']+wifi]]
     
     for i in self.cart:
       msg.append([i , self.cart[i]['price'] , self.cart[i]['amount'] , self.cart[i]['total']])
@@ -213,7 +237,7 @@ class TakeawayPage(tk.Frame):
                           font=('Arial',16,'bold'))
             
     e.grid(row=0, column=4)
-    e.insert(tk.END, msg[0][4])
+    e.insert(tk.END, "Total: " + str(msg[0][4]))
 
   def buy(self,tran_type,*args):
 
