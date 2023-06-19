@@ -4,20 +4,7 @@
     "2": {},
     "3": {},
     "4": {},
-    "5": {
-        "cappuccino": {
-            "price": 20,
-            "amount": 1,
-            "total": 20,
-            "id": 3
-        },
-        "frappuccino caramel": {
-            "price": 22,
-            "amount": 1,
-            "total": 22,
-            "id": 11
-        }
-    },
+    "5": {},
     "6": {},
     "7": {},
     "8": {},
@@ -25,20 +12,7 @@
     "10": {},
     "11": {},
     "12": {},
-    "13": {
-        "dbs latte": {
-            "price": 25,
-            "amount": 1,
-            "total": 25,
-            "id": 5
-        },
-        "frappuccino caramel": {
-            "price": 22,
-            "amount": 1,
-            "total": 22,
-            "id": 11
-        }
-    },
+    "13": {},
     "14": {},
     "15": {},
     "16": {},
