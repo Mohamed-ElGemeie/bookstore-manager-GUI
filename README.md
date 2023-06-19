@@ -37,8 +37,7 @@
 
 This project was initiated in December 2021 and toke 9 months to complete, and its aim was to manage the transactions of my mother's cafe/bookstore. The problem that this program solves was calculating the wifi charges for each customer simultaneously. Made in python using the tkinter module for the GUI, and pandas, json, csv modules for storing neccessary data.
 
-![image](https://github.com/Mohamed-ElGemeie/bookstore-manager-GUI/blob/main/imgs/report.PNG?raw=true)
-
+![image](https://github.com/Mohamed-ElGemeie/bookstore-manager-GUI/blob/main/assests/report.PNG?raw=true)
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
@@ -131,7 +130,7 @@ This project can make session (Wifi charged) and take-away (Not Wifi charged) tr
 
 * Take-away and in-store items have different prices on the menu.
 
-* The time of a session's initiation, session's end, takeaway initiationis all recoreded.
+* The time of a session's initiation, session's end, takeaway initiationis all recoreded
 
 ![image](https://github.com/Mohamed-ElGemeie/bookstore-manager-GUI/blob/main/assests/SessionPage.PNG?raw=true)
 <p align="right">(<a href="#top">back to top</a>)</p>
